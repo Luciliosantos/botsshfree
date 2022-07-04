@@ -48,6 +48,7 @@ switch ($tlg->Text ()){
 		'parse_mode' => 'html',
 		'reply_markup' => $tlg->buildInlineKeyBoard ([
 			[$tlg->buildInlineKeyboardButton ('🇧🇷 SSH Gratis BR 🇧🇷', null, '/sshgratis')]
+		    [$tlg->buildInlineKeyboardButton ('🇧🇷 Comprar 30 Dias 🇧🇷', null, '/pix')]
 		])
 	]);
 
@@ -66,6 +67,13 @@ switch ($tlg->Text ()){
 		'chat_id' => $tlg->ChatID (),
 		'text' => 'Foram criadas <b>'.$redis->dbSize ().'</b> contas nas ultimas 24h',
 		'parse_mode' => 'html'
+	]);
+	
+    break;
+	case '/pix':
+
+	$tlg->answerCallbackQuery ([
+	'callback_query_id' => $tlg->Callback_ID()
 	]);
 
 	break;
@@ -90,7 +98,7 @@ switch ($tlg->Text ()){
 
 		exec ('./gerarusuario.sh '.$usuario.' '.$senha.' 1 1');
 
-		$textoSSH="🇧🇷 Conta SSH criada ;)\r\n\r\n<b>Servidor:</b> <code>".$ip."</code>\r\n<b>Usuario:</b> <code>".$usuario."</code>\r\n<b>Senha:</b> <code>".$senha."</code>\r\n<b>Logins:</b> 1\r\n<b>Validade:</b> ".date ('d/m', strtotime('+1 day'))."\r\n\r\n🤙 Cortesia do @DARKNETSSHBOT";
+		$textoSSH="🇧🇷 Conta SSH criada ;)\r\n\r\n<b>Servidor:</b> <code>".$ip."</code>\r\n<b>Usuario:</b> <code>".$usuario."</code>\r\n<b>Senha:</b> <code>".$senha."</code>\r\n<b>Logins:</b> 1\r\n<b>Validade:</b> ".date ('d/m', strtotime('+3 hour'))."\r\n\r\n🤙 Cortesia do @NETxx0";
 
 		$redis->setex ($tlg->UserID (), 43200, 'true'); //define registro para ser guardado por 12h
 
