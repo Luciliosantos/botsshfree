@@ -57,7 +57,7 @@ switch ($tlg->Text ()){
 
 	$tlg->sendMessage ([
 		'chat_id' => $tlg->ChatID (),
-		'text' => 'Bot original @DARKNETSSHBOT por @DARKNETSSH'
+		'text' => 'Bot original @Technet1bot por @NETxx0'
 	]);
 
 	break;
