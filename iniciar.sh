@@ -10,7 +10,7 @@ if [ -e "dadosBot.ini" ] ; then
 
 	screen -X -S bot quit > /dev/null
 	screen -dmS bot php bot.php
-	echo "BOT TESTE REINICIADO"
+	echo "Bot foi reiniciado e está executano em segundo plano"
 
 else
 
@@ -52,7 +52,7 @@ screen -dmS bot php bot.php
 
 rm bot.zip
 
-echo "Pronto, Seu Bot Esta Em Execução
-@Luciliosantos"
+echo "Pronto, o bot esta executando em segundo plano
+Agradeça a @Luciliosantos"
 
 fi
