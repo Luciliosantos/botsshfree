@@ -48,7 +48,6 @@ switch ($tlg->Text ()){
 		'parse_mode' => 'html',
 		'reply_markup' => $tlg->buildInlineKeyBoard ([
 			[$tlg->buildInlineKeyboardButton ('GERAR TESTE GRÁTIS', null, '/sshgratis')]
-	    	[$tlg->buildInlineKeyboardButton ('COMPRAR 30 DIAS', null, '/PIX')]
 		])
 	]);
 
@@ -67,13 +66,6 @@ switch ($tlg->Text ()){
 		'chat_id' => $tlg->ChatID (),
 		'text' => 'Foram criadas <b>'.$redis->dbSize ().'</b> contas nas ultimas 24h',
 		'parse_mode' => 'html'
-	]);
-	
-    break;
-	case '/PIX':
-
-	$tlg->answerCallbackQuery ([
-	'callback_query_id' => $tlg->Callback_ID()
 	]);
 
 	break;
