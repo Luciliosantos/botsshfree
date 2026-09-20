@@ -1,128 +1,98 @@
 <?php
-
-// Bot criado por @DARKNETSSH código original para o @DARKNETSSHBOT
-
-date_default_timezone_set ('America/Sao_Paulo'); // define timestamp padrão
-
-// Incluindo arquivos nescessários
-include __DIR__.'/Telegram.php';
-
 if (!file_exists('dadosBot.ini')){
-
-	echo "Faça a instalação do bot antes!";
-	exit;
-
+    echo "Configuracao nao encontrada!\n";
+    exit;
 }
 
-$textoMsg=json_decode (file_get_contents('textos.json'));
-$iniParse=parse_ini_file('dadosBot.ini');
+$textoMsg = json_decode(file_get_contents('textos.json'), true);
+$iniParse = parse_ini_file('dadosBot.ini');
 
-$ip=$iniParse ['ip'];
-$token=$iniParse ['token'];
-$limite=$iniParse ['limite'];
+$ip = $iniParse['ip'];
+$token = $iniParse['token'];
+$limite = $iniParse['limite'];
 
-define ('TOKEN', $token); // token do bot criado no @botfather
+$api_url = "https://telegram.org" . $token . "/";
+$offset = 0;
 
-// Instancia das classes
-$tlg=new Telegram (TOKEN);
-$redis=new Redis ();
-$redis->connect ('localhost', 6379); //redis usando porta padrão
+echo "Bot Nativo Pronto e Escutando no PHP 8!\n";
 
-// BLOCO USADO EM LONG POLLING
-
-while (true){
-
-$updates=$tlg->getUpdates();
-
-if (!$updates || !is_array($updates)) {
+while (true) {
+    $url = $api_url . "getUpdates?offset=" . $offset . "&timeout=5";
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    
+    $updates = json_decode($response, true);
+    
+    if (isset($updates['result']) && is_array($updates['result'])) {
+        foreach ($updates['result'] as $update) {
+            $offset = $update['update_id'] + 1;
+            
+            if (isset($update['message']['text'])) {
+                $chat_id = $update['message']['chat']['id'];
+                $text = $update['message']['text'];
+                
+                if ($text == '/start') {
+                    $keyboard = [
+                        'inline_keyboard' => [
+                            [['text' => '🇧🇷 SSH Gratis BR 🚀', 'callback_data' => '/sshgratis']],
+                            [['text' => '💵 Comprar 30 Dias 🚀', 'callback_data' => '/pix']]
+                        ]
+                    ];
+                    
+                    $msg_start = isset($textoMsg['start']) ? $textoMsg['start'] : "🤖 Bem-vindo ao Gerenciador SSH!";
+                    $send_url = $api_url . "sendMessage?chat_id=" . $chat_id . "&text=" . urlencode($msg_start) . "&parse_mode=html&reply_markup=" . urlencode(json_encode($keyboard));
+                    file_get_contents($send_url);
+                }
+            }
+            
+            if (isset($update['callback_query'])) {
+                $callback_id = $update['callback_query']['id'];
+                $chat_id = $update['callback_query']['message']['chat']['id'];
+                $data = $update['callback_query']['data'];
+                $user_id = $update['callback_query']['from']['id'];
+                
+                file_get_contents($api_url . "answerCallbackQuery?callback_query_id=" . $callback_id);
+                
+                if ($data == '/sshgratis') {
+                    $redis = new Redis();
+                    try {
+                        $redis->connect('127.0.0.1', 6379);
+                        $db_size = $redis->dbSize();
+                        $exists = $redis->exists($user_id);
+                    } catch (Exception $e) {
+                        $db_size = 0;
+                        $exists = false;
+                    }
+                    
+                    if ($db_size == $limite) {
+                        $textoSSH = isset($textoMsg['sshgratis']['limite']) ? $textoMsg['sshgratis']['limite'] : "❌ Limite atingido!";
+                    } elseif ($exists) {
+                        $textoSSH = isset($textoMsg['sshgratis']['nao_criado']) ? $textoMsg['sshgratis']['nao_criado'] : "❌ Conta activa!";
+                    } else {
+                        $usuario = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 5);
+                        $senha = mt_rand(11111, 99999);
+                        
+                        @chmod('gerarusuario.sh', 0755);
+                        if (file_exists('gerarusuario.sh')) {
+                            exec('./gerarusuario.sh ' . $usuario . ' ' . $senha . ' 1 1');
+                        } else {
+                            exec('useradd -M -s /bin/false ' . $usuario . ' && echo "' . $usuario . ':' . $senha . '" | chpasswd');
+                        }
+                        
+                        $textoSSH = "Conta SSH criada ;) \r\n\r\n<b>Servidor:</b> " . $ip . "\r\n<b>Usuário:</b> " . $usuario . "\r\n<b>Senha:</b> " . $senha;
+                        try { $redis->setex($user_id, 43200, 'true'); } catch(Exception $e){}
+                    }
+                    
+                    $send_url = $api_url . "sendMessage?chat_id=" . $chat_id . "&text=" . urlencode($textoSSH) . "&parse_mode=html";
+                    file_get_contents($send_url);
+                }
+            }
+        }
+    }
     sleep(1);
-    continue;
 }
-
-for ($i=0; $i < $tlg->UpdateCount(); $i++){
-
-if (!isset($updates[$i])) {
-    continue;
-}
-
-$tlg->serveUpdate($i);
-
-$msg_txt = (is_object($tlg) && is_string($tlg->Text())) ? $tlg->Text() : "";
-
-switch ($msg_txt){
-
-	case '/start':
-
-	$tlg->sendMessage ([
-		'chat_id' => $tlg->ChatID (),
-		'text' => $textoMsg->start,
-		'parse_mode' => 'html',
-		'reply_markup' => $tlg->buildInlineKeyBoard ([
-			[$tlg->buildInlineKeyboardButton ('🇧🇷 SSH Gratis BR 🇧🇷', null, '/sshgratis')]
-		    [$tlg->buildInlineKeyboardButton ('🇧🇷 Comprar 30 Dias 🇧🇷', null, '/pix')]
-		])
-	]);
-
-	break;
-	case '/sobre':
-
-	$tlg->sendMessage ([
-		'chat_id' => $tlg->ChatID (),
-		'text' => 'Bot original @Technet1bot por @NETxx0'
-	]);
-
-	break;
-	case '/total':
-
-	$tlg->sendMessage ([
-		'chat_id' => $tlg->ChatID (),
-		'text' => 'Foram criadas <b>'.$redis->dbSize ().'</b> contas nas ultimas 24h',
-		'parse_mode' => 'html'
-	]);
-	
-    break;
-	case '/pix':
-
-	$tlg->answerCallbackQuery ([
-	'callback_query_id' => $tlg->Callback_ID()
-	]);
-
-	break;
-	case '/sshgratis':
-
-	$tlg->answerCallbackQuery ([
-	'callback_query_id' => $tlg->Callback_ID()
-	]);
-
-	if ($redis->dbSize () == $limite){
-
-		$textoSSH=$textoMsg->sshgratis->limite;
-
-	} elseif ($redis->exists ($tlg->UserID ())){
-
-		$textoSSH=$textoMsg->sshgratis->nao_criado;
-
-	} else {
-
-		$usuario=substr (str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 6);
-		$senha=mt_rand(11111, 999999);
-
-		exec ('./gerarusuario.sh '.$usuario.' '.$senha.' 1 1');
-
-		$textoSSH="🇧🇷 Conta SSH criada ;)\r\n\r\n<b>Servidor:</b> <code>".$ip."</code>\r\n<b>Usuario:</b> <code>".$usuario."</code>\r\n<b>Senha:</b> <code>".$senha."</code>\r\n<b>Logins:</b> 1\r\n<b>Validade:</b> ".date ('d/m', strtotime('+3 hour'))."\r\n\r\n🤙 Cortesia do @NETxx0";
-
-		$redis->setex ($tlg->UserID (), 43200, 'true'); //define registro para ser guardado por 12h
-
-	}
-
-	$tlg->sendMessage ([
-		'chat_id' => $tlg->ChatID (),
-		'text' => $textoSSH,
-		'parse_mode' => 'html'
-	]);
-
-	break;
-
-}
-
-}}
