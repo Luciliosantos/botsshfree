@@ -34,11 +34,22 @@ while (true){
 
 $updates=$tlg->getUpdates();
 
+if (!$updates || !is_array($updates)) {
+    sleep(1);
+    continue;
+}
+
 for ($i=0; $i < $tlg->UpdateCount(); $i++){
+
+if (!isset($updates[$i])) {
+    continue;
+}
 
 $tlg->serveUpdate($i);
 
-switch ($tlg->Text ()){
+$msg_txt = (is_object($tlg) && is_string($tlg->Text())) ? $tlg->Text() : "";
+
+switch ($msg_txt){
 
 	case '/start':
 
