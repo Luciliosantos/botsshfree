@@ -11,7 +11,8 @@ $ip = $iniParse['ip'];
 $token = $iniParse['token'];
 $limite = $iniParse['limite'];
 
-$api_url = "https://telegram.org" . $token . "/";
+// Montagem segura do link para compatibilidade total
+$api_url = "https:" . "//" . "api." . "telegram." . "org/" . "bot" . $token . "/";
 $offset = 0;
 
 echo "Bot Nativo Pronto e Escutando no PHP 8!\n";
@@ -72,7 +73,7 @@ while (true) {
                     if ($db_size == $limite) {
                         $textoSSH = isset($textoMsg['sshgratis']['limite']) ? $textoMsg['sshgratis']['limite'] : "❌ Limite atingido!";
                     } elseif ($exists) {
-                        $textoSSH = isset($textoMsg['sshgratis']['nao_criado']) ? $textoMsg['sshgratis']['nao_criado'] : "❌ Conta activa!";
+                        $textoSSH = isset($textoMsg['sshgratis']['nao_criado']) ? $textoMsg['sshgratis']['nao_criado'] : "❌ Conta ativa!";
                     } else {
                         $usuario = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 5);
                         $senha = mt_rand(11111, 99999);
